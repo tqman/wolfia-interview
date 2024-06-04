@@ -1,0 +1,19 @@
+<%
+const { utils, route, config, modelTypes } = it;
+const { _, pascalCase } = utils;
+const apiClassName = pascalCase(route.moduleName);
+const routes = route.routes;
+const dataContracts = _.map(modelTypes, "name");
+%>
+
+import { AxiosError, AxiosRequestConfig } from 'axios';
+import useSWR, { SWRConfiguration } from 'swr';
+import { api } from './';
+import { createFormData } from './http-client';
+<% if (dataContracts.length) { %>
+  import { <%~ dataContracts.join(", ") %> } from "./<%~ config.fileNames.dataContracts %>"
+<% } %>
+
+<% routes.forEach((route) => { %>
+    <%~ includeFile('./procedure-call.ejs', { ...it, route }) %>
+<% }) %>

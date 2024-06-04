@@ -1,0 +1,81 @@
+<%
+const { utils, route, config } = it;
+const { _, getInlineParseContent } = utils;
+const { parameters, path, method, payload, query, formData, requestParams } = route.request;
+const { type, errorType } = route.response;
+const routeDocs = includeFile("./route-docs", { config, route, utils });
+const queryName = (query && query.name) || "query";
+const pathParams = _.values(parameters);
+const pathParamsNames = _.map(pathParams, "name");
+
+const argToTmpl = ({ name, optional, type, defaultValue }) => `${name}${!defaultValue && optional ? '?' : ''}: ${type}${defaultValue ? ` = ${defaultValue}` : ''}`;
+
+const rawWrapperArgs = config.extractRequestParams ?
+        _.compact([
+            requestParams && {
+                name: pathParams.length ? `{ ${_.join(pathParamsNames, ", ")}, ...${queryName} }` : queryName,
+                optional: false,
+                type: getInlineParseContent(requestParams),
+            },
+            ...(!requestParams ? pathParams : []),
+            payload,
+        ]) :
+        _.compact([
+            ...pathParams,
+            query,
+            payload,
+        ])
+
+if (_.upperCase(method) === "GET") {
+    rawWrapperArgs.push({
+        name: 'config',
+        optional: true,
+        type: `SWRConfiguration<${type}>`
+    })
+} else {
+    rawWrapperArgs.push({
+        name: 'config',
+        optional: true,
+        type: `AxiosRequestConfig`
+    })
+}
+
+const wrapperArgs = _
+        // Sort by optionality
+        .sortBy(rawWrapperArgs, [o => o.optional])
+        .map(argToTmpl)
+        .join(', ')
+
+let bodyTmpl = _.get(payload, "name") || null;
+// Handler to transform a standard object into FormData when an endpoint expects form data.
+if (formData) bodyTmpl = `createFormData(${bodyTmpl})`
+// The Axios API for DELETE requests expects the data to be nested under the `data` property.
+if (_.upperCase(method) === "DELETE" && bodyTmpl) bodyTmpl = `{ data: ${bodyTmpl} }`
+
+// The Next.js router returns `undefined` for query params on the first render.
+// When passed as path params this leads to 404s so this protects against falsy values.
+const pathParamsTruthyCheck = pathParamsNames.length ? pathParamsNames.map(name => `${name}`).join(" && ") : false;
+
+const fullPath = query ? `${path}\${queryParameters}` : path;
+%>
+/**
+<%~ routeDocs.description %>
+
+*/<% if (_.upperCase(method) === "GET") { %>
+
+export const <%~ _.camelCase(`use_${route.routeName.usage}`) %> = (<%~ wrapperArgs %>) => {
+<% if (query) { %>
+    const queryString = new URLSearchParams(query).toString();
+    const queryParameters = queryString ? `?${queryString}` : '';<% } %>
+return useSWR<<%~ type %>, AxiosError>(<% if (pathParamsTruthyCheck) { %><%~ pathParamsTruthyCheck %> ? `<%~ fullPath %>` : null<% } else {  %>`<%~ fullPath %>`<% } %>, config)
+}
+
+<%
+} else {
+    const apiMethod = formData ? "postForm" : method;
+%>
+
+export const <%~ route.routeName.usage %> = (<%~ wrapperArgs %>) =>
+api.<%~ apiMethod %><<%~ type %>>(`<%~ path %>`<%~ bodyTmpl ? `, ${bodyTmpl}` : '' %>, config)
+
+<% } %>

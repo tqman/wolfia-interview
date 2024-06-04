@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "api"
+version = "0.1.0"
+description = ""
+authors = ["Naren <naren@wolfia.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+requests = "^2.32.3"
+openapi_spec_validator = "^0.7.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

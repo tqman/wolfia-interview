@@ -1,0 +1,30 @@
+{
+  "name": "wolfia-interview",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "open-api:generate": "swagger-typescript-api -p ../api/openapi.json -n index.ts -t ./openapi -o ./api --modular && prettier --write ./api",
+    "open-api:validate": "npm run open-api:generate && git add ./api && git diff HEAD --exit-code --quiet ./api || (echo 'Open API client is out-of-date. Run `npm run open-api:generate` and commit changes.' && exit 1)",
+    "next:version": "node -p \"require('next/package.json').version\""
+  },
+  "dependencies": {
+    "react": "^18",
+    "react-dom": "^18",
+    "next": "14.2.3",
+    "axios": "^1.6.8",
+    "swr": "^2.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "swagger-typescript-api": "^13.0.3"
+  }
+}

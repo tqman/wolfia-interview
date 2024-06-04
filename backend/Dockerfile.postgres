@@ -1,0 +1,26 @@
+FROM postgres:12
+
+# Install necessary packages
+RUN apt-get update && \
+  apt-get install -y postgresql-server-dev-12 git build-essential python3-pip python3-venv && \
+  cd /tmp && \
+  git clone https://github.com/pgvector/pgvector.git && \
+  cd pgvector && \
+  make && \
+  make install && \
+  cd .. && \
+  rm -rf pgvector && \
+  apt-get remove -y postgresql-server-dev-12 git build-essential && \
+  apt-get autoremove -y && \
+  apt-get clean
+
+# Create a virtual environment and install pgcli
+RUN python3 -m venv /opt/pgcli-venv && \
+    /opt/pgcli-venv/bin/pip install --upgrade pip && \
+    /opt/pgcli-venv/bin/pip install pgcli
+
+# Add initialization script
+COPY init-db.sh /docker-entrypoint-initdb.d/
+
+# Add pgcli to the PATH
+ENV PATH="/opt/pgcli-venv/bin:$PATH"

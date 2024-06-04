@@ -1,0 +1,58 @@
+[tool.poetry]
+name = "backend"
+version = "0.1.0"
+description = ""
+authors = ["Naren <naren@wolfia.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.111.0"
+uvicorn = "^0.30.1"
+SQLAlchemy = "^2.0.30"
+pydantic = "^2.7.2"
+python-multipart = "^0.0.9"
+Authlib = "^1.3.0"
+httpx = "^0.27.0"
+psycopg2-binary = "^2.9.9"
+alembic = "^1.13.1"
+PyJWT = "^2.8.0"
+requests = "^2.32.3"
+openai = "^1.30.5"
+gunicorn = "^22.0.0"
+itsdangerous = "^2.1.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+exclude = [
+    ".bzr", ".direnv", ".eggs", ".git", ".git-rewrite", ".hg",
+    ".mypy_cache", ".nox", ".pants.d", ".pytype", ".ruff_cache",
+    ".svn", ".tox", ".venv", "__pypackages__", "_build", "buck-out",
+    "build", "dist", "node_modules", "venv",
+]
+line-length = 88
+indent-width = 4
+target-version = "py38"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+ignore = []
+fixable = ["ALL"]
+unfixable = []
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = false
+docstring-code-line-length = "dynamic"
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    'ignore:Support for class-based `config` is deprecated, use ConfigDict instead:DeprecationWarning'
+]
+
