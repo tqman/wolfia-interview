@@ -137,8 +137,12 @@ frontend/.next/
 *.db
 
 # IntelliJ IDEA
+<<<<<<< HEAD
 *.iml
 
 # Lock files
 **/package-lock.json
 **/yarn.lock
+=======
+*.iml
+>>>>>>> 62601c8 (Initial commit)
