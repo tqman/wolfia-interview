@@ -68,10 +68,12 @@ export default function Home() {
           </div>
         )}
       </div>
-      <div>
+      {currentUser?.internal_email && (
+        <div>
           <p>Internal User: {currentUser.internal_email}</p>
           <button onClick={handleLogout}>Logout</button>
-      </div>
+        </div>
+      )}
     </main>
   );
 }
