@@ -44,8 +44,10 @@ class UserSession(Base):
     end_at = Column(DateTime)
     created_at = Column(TIMESTAMP, nullable=False, server_default=func.current_timestamp())
     updated_at = Column(TIMESTAMP, nullable=False, server_default=func.current_timestamp(), onupdate=func.current_timestamp())
+    internal_user_id = Column(Text, ForeignKey("users.id"), nullable=True)
 
-    user = relationship("User")
+    user = relationship("User", foreign_keys=[user_id])
+    internal_user = relationship("User", foreign_keys=[internal_user_id])
 
 
 class Organization(Base):
