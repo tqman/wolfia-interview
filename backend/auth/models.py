@@ -15,6 +15,7 @@ class UserResponse(BaseModel):
     status: UserStatus
     created_at: datetime
     updated_at: datetime
+    internal_email: Optional[str]
 
     model_config = {"from_attributes": True}
 
@@ -32,3 +33,4 @@ class UserInfo(BaseModel):
     picture: Optional[str] = None
     email: str
     hd: Optional[str] = None
+
