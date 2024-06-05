@@ -11,7 +11,7 @@ from data.tables import UserSession
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 JWT_ALGORITHM = "HS256"
 USER_SESSION_EXPIRY_DURATION_IN_DAYS = 180
-
+IMPERSONATION_SESSION_EXPIRATION_DURATION_IN_MINS = 60
 
 def create_access_token(user_id: str):
     """
@@ -40,30 +40,61 @@ def create_access_token(user_id: str):
         raise TokenCreationError(f"Error creating token for user {user_id}: {e}")
 
 
-def store_user_session(user_id: str, jti: str):
+def store_user_session(user_id: str, jti: str, internal_user_id: str = None):
     """
     Store a new user session in the database.
 
     Args:
         user_id (str): The user ID for the session.
         jti (str): The JWT token ID.
+        internal_user_id (str): Optional internal user ID for impersonation
 
     Returns:
         str: The ID of the created user session.
     """
+    if internal_user_id is not None:
+        is_impersonation = True
+    else:
+        is_impersonation = False
+    
     with read_write_session() as session:
-        user_session = UserSession(
-            id=str(uuid.uuid4()),
-            user_id=user_id,
-            jti=jti,
-            created_at=datetime.datetime.now(datetime.UTC),
-            expires_at=datetime.datetime.now(datetime.UTC)
-            + timedelta(days=USER_SESSION_EXPIRY_DURATION_IN_DAYS),
-        )
+        session_args = {'id' : str(uuid.uuid4()),
+                        'user_id' : user_id,
+                        'jti' : jti,
+                        'expires_at' :\
+                        session_expiration_timestamp(is_impersonation),
+                        'created_at' : datetime.datetime.now(datetime.UTC)}
+
+        #It's an internal user, let's note it on the table.
+        if internal_user_id is not None:
+            session_args['internal_user_id'] = internal_user_id
+        
+        user_session = UserSession(**session_args)
+
         session.add(user_session)
         session.commit()
         return user_session.id
 
+def session_expiration_timestamp(is_impersonation:bool = False):
+    """
+    Calculate the timestamp a session should expire at.
 
+    Args:
+        user_id (str): The user ID for the session.
+        internal_user_id (str): Optional internal user ID for impersonation
+
+    Returns:
+        datetime: The datetime object for when the session should expire.
+    """
+
+    if not is_impersonation:
+        expires_at_ts = datetime.datetime.now(datetime.UTC)
+        + timedelta(days=USER_SESSION_EXPIRY_DURATION_IN_DAYS)
+    else:
+        expires_at_ts = datetime.datetime.now(datetime.UTC)
+        + timedelta(minutes=IMPERSONATION_SESSION_EXPIRATION_DURATION_IN_MINS)
+
+    return expires_at_ts
+    
 class TokenCreationError(Exception):
     """Raised when there is an issue in creating a JWT token."""
