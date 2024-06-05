@@ -26,6 +26,15 @@ export default function Home() {
     fetchCurrentUser();
   }, []);
 
+  const handleLogout = async () => {
+    try {
+      await api.post<Response>('/auth/logout');
+      window.location.href = '/login'; // Redirect to the login page
+    } catch (err) {
+      setError("Failed to log out");
+    }
+  };
+
   if (loading) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center p-24">
@@ -58,6 +67,10 @@ export default function Home() {
             <p><strong>Member since:</strong> {new Date(currentUser.created_at).toLocaleDateString()}</p>
           </div>
         )}
+      </div>
+      <div>
+          <p>Internal User: {currentUser.internal_email}</p>
+          <button onClick={handleLogout}>Logout</button>
       </div>
     </main>
   );
