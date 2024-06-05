@@ -6,7 +6,6 @@ from sqlalchemy.orm import relationship
 from data.database import Base
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Text, Enum, func, TIMESTAMP
 
-
 class UserStatus(PyEnum):
     ACTIVE = "ACTIVE"
     PENDING = "PENDING"
@@ -59,3 +58,23 @@ class Organization(Base):
     hd = Column(Text, nullable=False)
     created_at = Column(DateTime, nullable=False, default=datetime.now)
     updated_at = Column(TIMESTAMP, nullable=False, server_default=func.current_timestamp(), onupdate=func.current_timestamp())
+
+class AccessLogEventType(PyEnum):
+    LOGIN = "LOGIN"
+    LOGOUT = "LOGOUT"
+
+class AccessLog(Base):
+    __tablename__ = "access_log"
+
+    id = Column(Text, primary_key=True)
+    status = Column(Enum(AccessLogEventType),
+                    nullable=False)
+    user_id = Column(Text, ForeignKey("users.id"), nullable=False)
+    internal_user_id = Column(Text, ForeignKey("users.id"))
+    access_at = Column(TIMESTAMP,
+                       nullable=False,
+                       server_default=func.current_timestamp())
+    
+    user = relationship("User", foreign_keys=[user_id])
+    internal_user = relationship("User", foreign_keys=[internal_user_id])
+    

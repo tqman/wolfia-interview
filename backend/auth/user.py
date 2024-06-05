@@ -15,7 +15,8 @@ from auth.jwt_manager import (
     JWT_ALGORITHM, create_access_token,
 )
 from data.database import read_write_session, read_only_session, BaseModel
-from data.tables import Organization, User, UserStatus, UserSession
+from data.tables import Organization, User, UserStatus, UserSession, \
+    AccessLogEventType, AccessLog
 from log import logger
 
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
@@ -109,6 +110,21 @@ def logout_user_session(user_id: str, jti: str):
             logger.info(f"Ending user session - {user_session.id} for user - {user_id}")
             user_session.status = "logged_out"
             user_session.end_at = datetime.datetime.now(datetime.UTC)
+
+            #Let's note it in the access_log as well:
+            access_log_args = {'id' : str(uuid.uuid4()),
+                               'user_id' : user_id,
+                               'status' : AccessLogEventType.LOGOUT}
+
+            if user_session.internal_user_id is not None:
+                access_log_args['internal_user_id'] =\
+                    user_session.internal_user_id
+            
+            access_log = AccessLog(**access_log_args)
+
+            session.add(access_log)
+            session.commit()
+                                   
         logger.info(f"User logged out: {user_id}")
 
 
