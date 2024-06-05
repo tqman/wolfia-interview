@@ -18,7 +18,8 @@ export default function LoginRegister() {
       login({
         email: email,
         name: null,
-        organization: null
+        organization: null,
+        internal_email: null
       }).then((res) => {
         router.push('/');
       })
@@ -26,7 +27,8 @@ export default function LoginRegister() {
       login({
         email: email,
         name: name,
-        organization: orgName
+        organization: orgName,
+        internal_email: null
       }).then((res) => {
         router.push('/');
       })
