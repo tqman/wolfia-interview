@@ -1,10 +1,11 @@
 from datetime import timedelta
+from typing import Tuple, Optional
 
 from fastapi import APIRouter, HTTPException, Depends
 from starlette.requests import Request
 from starlette.responses import Response
 
-from auth.jwt_manager import USER_SESSION_EXPIRY_DURATION_IN_DAYS
+from auth.jwt_manager import session_expiration_timestamp
 from auth.models import UserResponse
 from auth.user import create_or_fetch_user, authenticate_user, get_jti_from_request, logout_user_session, UserRequest
 from data.database import read_only_session
@@ -12,7 +13,6 @@ from data.tables import User, Organization
 from log import logger
 
 router = APIRouter()
-
 
 @router.post(
     "/auth/login",
@@ -24,10 +24,21 @@ async def login(user_request: UserRequest):
         token = create_or_fetch_user(user_request)
         response = Response()
         response.delete_cookie("access_token")
+
+        #How long this thing should last for depends whether it's an external
+        #user or an internal one. If it's an internal one, we want it to be
+        #much shorter so we don't have all these valid extra sessions hanging
+        #around.
+
+        if user_request.internal_email is not None:
+            max_age = session_expiration_timestamp(False)
+        else:
+            max_age = session_expiration_timestamp(True)
+        
         response.set_cookie(
             key="access_token",
             value=token,
-            max_age=int(timedelta(days=USER_SESSION_EXPIRY_DURATION_IN_DAYS).total_seconds()),
+            max_age=session_expiration_timestamp(user_request),
             domain=None,
             secure=False,
             httponly=False,
@@ -44,10 +55,17 @@ async def login(user_request: UserRequest):
     operation_id="logout",
     description="Logout user."
 )
-async def logout(request: Request, response: Response, user: User = Depends(authenticate_user)):
+async def logout(request: Request,
+                 response: Response,
+                 user_tuple: Tuple[User, Optional[User]] = \
+                 Depends(authenticate_user)):
+    
+    user, internal_user = user_tuple
+
     jti = get_jti_from_request(request)
     logout_user_session(user.id, jti)
     response.delete_cookie("access_token")
+    response.status_code = 200
     return response
 
 
@@ -57,7 +75,12 @@ async def logout(request: Request, response: Response, user: User = Depends(auth
     description="Get the current user.",
     response_model=UserResponse,
 )
-async def me(user: User = Depends(authenticate_user)) -> UserResponse:
+async def me(user_tuple: Tuple[User, Optional[User]] = \
+             Depends(authenticate_user)) -> UserResponse:
+
+    #Let's split out the user and internal_user (which may be None)
+    user, internal_user = user_tuple
+
     with read_only_session() as session:
         user_data = session.query(
             User.id,
@@ -73,11 +96,16 @@ async def me(user: User = Depends(authenticate_user)) -> UserResponse:
 
         if not user_data:
             raise HTTPException(status_code=404, detail="User not found")
-
+        
         organization_name = None
         if user_data.organization_id:
             organization = session.query(Organization.name).filter_by(id=user_data.organization_id).first()
             organization_name = organization.name if organization else None
+
+        if internal_user is not None:
+            internal_user_email = internal_user.email
+        else:
+            internal_user_email = None
 
         return UserResponse(
             id=user_data.id,
@@ -89,4 +117,5 @@ async def me(user: User = Depends(authenticate_user)) -> UserResponse:
             created_at=user_data.created_at,
             updated_at=user_data.updated_at,
             status=user_data.status,
+            internal_email=internal_user_email,
         )
