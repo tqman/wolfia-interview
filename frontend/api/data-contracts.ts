@@ -47,6 +47,11 @@ export interface UserRequest {
    * Organization
    */
   organization: string | null;
+
+  /**
+   * Email
+   */
+  internal_email: string | null;
 }
 
 /**
@@ -98,6 +103,8 @@ export interface UserResponse {
    * @format date-time
    */
   updated_at: string;
+
+  internal_email: string | null;
 }
 
 /**
